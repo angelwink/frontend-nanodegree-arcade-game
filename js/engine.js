@@ -45,7 +45,15 @@ var Engine = (function(global) {
         /* Call our update/render functions, pass along the time delta to
          * our update function since it may be used for smooth animation.
          */
+
+        /*
+         ADDED:
+         We need to clear the canvas in order to draw a new frame
+         */
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
         update(dt);
+
         render();
 
         /* Set our lastTime variable which is used to determine the time delta
@@ -57,19 +65,26 @@ var Engine = (function(global) {
          * function again as soon as the browser is able to draw another frame.
          */
         win.requestAnimationFrame(main);
-    };
+    }
 
-    /* This function does some initial setup that should only occur once,
+    /*
+     MODIFIED:
+     Added line to initialize level to 1
+     * This function does some initial setup that should only occur once,
      * particularly setting the lastTime variable that is required for the
      * game loop.
      */
     function init() {
-        reset();
+        this.level = 1;
+        initGraphics();
         lastTime = Date.now();
         main();
     }
 
-    /* This function is called by main (our game loop) and itself calls all
+    /*
+     MODIFIED:
+     Checks game state and runs code accordingly;
+     * This function is called by main (our game loop) and itself calls all
      * of the functions which may need to update entity's data. Based on how
      * you implement your collision detection (when two entities occupy the
      * same space, for instance when your character should die), you may find
@@ -79,8 +94,20 @@ var Engine = (function(global) {
      * on the entities themselves within your app.js file).
      */
     function update(dt) {
-        updateEntities(dt);
-        // checkCollisions();
+        if(gameState === 'waiting'){
+            reset();
+        }
+        else if(gameState === 'playing'){
+            updateEntities(dt);
+            checkCollisions();
+        }
+        else if(gameState === 'restart'){
+            init();
+        }
+        else if(gameState === 'continue'){
+            level++;
+            reset();
+        }
     }
 
     /* This is called by the update function  and loops through all of the
@@ -125,7 +152,7 @@ var Engine = (function(global) {
          */
         for (row = 0; row < numRows; row++) {
             for (col = 0; col < numCols; col++) {
-                /* The drawImage function of the canvas' context element
+                /*
                  * requires 3 parameters: the image to draw, the x coordinate
                  * to start drawing and the y coordinate to start drawing.
                  * We're using our Resources helpers to refer to our images
@@ -136,11 +163,14 @@ var Engine = (function(global) {
             }
         }
 
-
         renderEntities();
     }
 
-    /* This function is called by the render function and is called on each game
+    /*
+     MODIFIED:
+     Added condition to render playing elements only when state is in playing,
+     otherwise render a menu.
+     * This function is called by the render function and is called on each game
      * tick. It's purpose is to then call the render functions you have defined
      * on your enemy and player entities within app.js
      */
@@ -148,19 +178,30 @@ var Engine = (function(global) {
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
          */
-        allEnemies.forEach(function(enemy) {
-            enemy.render();
-        });
+        if(gameState === 'playing'){
+            allEnemies.forEach(function(enemy) {
+                enemy.render();
+            });
 
-        player.render();
+            player.render();
+            hud.render();
+            star.render();
+        }
+        else {
+            // screen.render();
+            menu.render();
+
+        }
     }
 
-    /* This function does nothing but it could have been a good place to
-     * handle game reset states - maybe a new game menu or a game over screen
-     * those sorts of things. It's only called once by the init() method.
+
+    /*
+     MODIFIED:
+     The reset function calls a function to start a game level.
      */
     function reset() {
-        // noop
+        // call initGameState to set initial game state
+        game([0,2,1,1,0,0], 200, 5, level); //initiate game state passing in array or enemies on each row
     }
 
     /* Go ahead and load all of the images we know we're going to need to
@@ -172,7 +213,15 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/Heart.png',
+        'images/Star.png',
+        'images/Selector.png',
+        'images/char-boy.png',
+        'images/char-cat-girl.png',
+        'images/char-horn-girl.png',
+        'images/char-pink-girl.png',
+        'images/char-princess-girl.png'
     ]);
     Resources.onReady(init);
 
